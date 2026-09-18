@@ -34,26 +34,55 @@ const AndroidOS = (() => {
   }
 
   function lock() {
-    const now = new Date();
+    const now = new Date(); const hr = now.getHours(); const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+    const p0 = DATA.projects[0];
     const el = h(`<div class="a-screen a-lock">
-      <div class="a-status"><span>${fmtTime(now)}</span><span class="a-status-icons">${svg('signal', 14)}${svg('wifi', 14)}${svg('battery', 14)}</span></div>
-      <div class="a-lock-clock">${fmtTime(now)}</div>
-      <div class="a-lock-date">${now.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+      <div class="a-status"><span>${fmtTime(now)} · JaiOS</span><span class="a-status-icons">${svg('signal', 14)}${svg('wifi', 14)}${svg('battery', 14)} 100%</span></div>
+      <div class="a-lock-glow"></div>
+      <div class="a-lock-greet">${greet} 👋</div>
+      <div class="a-lock-clock"></div>
+      <div class="a-lock-date">${now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</div>
       <div class="a-lock-sig">${esc(DATA.name)}</div>
+      <div class="a-lock-glance"><span><i class="a-live-dot"></i> Open to SDE roles</span><span>${svg('rocket', 12)} ${DATA.projects.length} projects live</span><span>${svg('code', 12)} 200+ DSA</span></div>
+      <div class="a-lock-media" data-open="projects" data-project="${p0.id}">${tile(p0.icon, p0.color, 44, 14)}<div class="a-lock-media-t"><b>Now building</b><span>${esc(p0.name)} · ${esc(p0.stack.slice(0, 2).join(' + '))}</span></div><div class="a-eq"><i></i><i></i><i></i><i></i><i></i></div></div>
       <div class="a-lock-notifs">
-        ${notifications.slice(0, 2).map((n) => `<div class="a-lock-card">${tile(n.icon, n.color, 32, 9)}<div><div class="a-lock-card-t">${n.title}</div><div class="a-lock-card-s">${n.text}</div></div></div>`).join('')}
+        ${notifications.slice(0, 2).map((n, i) => `<button class="a-lock-card" style="--i:${i}" data-open="${n.open}" ${n.project ? `data-project="${n.project}"` : ''}>${tile(n.icon, n.color, 32, 9)}<div><div class="a-lock-card-t">${n.title}</div><div class="a-lock-card-s">${n.text}</div></div><span class="a-lock-card-x" data-x>${svg('x', 14)}</span></button>`).join('')}
       </div>
-      <div class="a-lock-bottom"><span class="a-lock-hint">${svg('chevronUp', 18)} Swipe up to unlock</span><div class="a-lock-actions"><span>${svg('phone', 20)}</span><span>${svg('mail', 20)}</span></div></div>
+      <div class="a-lock-bottom">
+        <div class="a-lock-actions">
+          <a class="a-lock-act" href="tel:${DATA.phone.replace(/\s/g, '')}" title="Call">${svg('phone', 20)}</a>
+          <button class="a-fp" aria-label="Unlock with fingerprint"><i class="a-fp-ring"></i>${svg('fingerprint', 30)}</button>
+          <a class="a-lock-act" href="mailto:${DATA.email}" title="Email">${svg('mail', 20)}</a>
+        </div>
+        <span class="a-lock-hint">${svg('chevronUp', 16)} Swipe up or touch the sensor</span>
+      </div>
     </div>`);
+    if (!phone) buildHome(); // home sits under the (blurred) lock so swiping reveals it
     root.appendChild(el);
     const stopParallax = FX.parallax(root, 16);
     FX.flipText(el.querySelector('.a-lock-clock'), fmtTime(now));
     const t = setInterval(() => FX.flipText(el.querySelector('.a-lock-clock'), fmtTime(new Date())), 1000);
-    let sy = null, moved = false;
-    const unlock = () => { clearInterval(t); stopParallax(); FX.sfx.unlock(); el.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1), opacity .4s'; el.style.transform = 'translateY(-100%)'; el.style.opacity = '0'; setTimeout(() => el.remove(), 500); if (!phone) buildHome(); else phone.classList.remove('hidden'); };
-    el.addEventListener('pointerdown', (e) => { sy = e.clientY; moved = false; el.setPointerCapture(e.pointerId); });
-    el.addEventListener('pointermove', (e) => { if (sy == null) return; const dy = Math.min(0, e.clientY - sy); if (dy < -4) moved = true; el.style.transform = `translateY(${dy * 0.6}px)`; });
-    el.addEventListener('pointerup', (e) => { if (sy == null) return; const dy = e.clientY - sy; sy = null; if (dy < -70 || !moved) unlock(); else { el.style.transition = 'transform .3s'; el.style.transform = ''; setTimeout(() => (el.style.transition = ''), 300); } });
+    let sy = null, moved = false, unlocked = false;
+    const unlock = (then) => {
+      if (unlocked) return; unlocked = true;
+      clearInterval(t); stopParallax(); FX.sfx.unlock();
+      el.style.transition = 'transform .5s cubic-bezier(.2,.8,.2,1), opacity .45s, filter .45s'; el.style.transform = 'translateY(-100%) scale(1.04)'; el.style.opacity = '0'; el.style.filter = 'blur(10px)';
+      setTimeout(() => el.remove(), 520);
+      phone.classList.remove('hidden');
+      setTimeout(() => { then ? then() : toast('Welcome! Swipe up for all apps'); }, 450);
+    };
+    // swipe to unlock (drag reveals the home screen underneath)
+    el.addEventListener('pointerdown', (e) => { if (e.target.closest('button, a')) return; sy = e.clientY; moved = false; el.setPointerCapture(e.pointerId); });
+    el.addEventListener('pointermove', (e) => { if (sy == null) return; const dy = Math.min(0, e.clientY - sy); if (dy < -4) moved = true; const k = Math.min(1, -dy / 260); el.style.transform = `translateY(${dy * 0.7}px) scale(${1 + k * .03})`; el.style.opacity = 1 - k * .5; });
+    el.addEventListener('pointerup', (e) => { if (sy == null) return; const dy = e.clientY - sy; sy = null; if (dy < -90) unlock(); else { el.style.transition = 'transform .35s var(--spring), opacity .3s'; el.style.transform = ''; el.style.opacity = ''; setTimeout(() => (el.style.transition = ''), 350); } });
+    // fingerprint sensor: press and hold ~700ms
+    const fp = el.querySelector('.a-fp'); let fpT = null;
+    const fpStart = (e) => { e.stopPropagation(); fp.classList.add('scan'); FX.sfx.tap(); fpT = setTimeout(() => { fp.classList.add('ok'); setTimeout(() => unlock(), 260); }, 700); };
+    const fpEnd = () => { if (fp.classList.contains('ok')) return; clearTimeout(fpT); fp.classList.remove('scan'); };
+    fp.addEventListener('pointerdown', fpStart); fp.addEventListener('pointerup', fpEnd); fp.addEventListener('pointerleave', fpEnd); fp.addEventListener('pointercancel', fpEnd);
+    // notification / media cards: unlock straight into the app
+    el.querySelectorAll('[data-open]').forEach((c) => (c.onclick = (e) => { if (e.target.closest('[data-x]')) { c.style.transition = 'transform .3s, opacity .3s'; c.style.transform = 'translateX(60px)'; c.style.opacity = '0'; setTimeout(() => c.remove(), 300); return; } unlock(() => openApp(c.dataset.open, c.dataset.project ? { projectId: c.dataset.project } : undefined)); }));
+    el.querySelectorAll('.a-lock-act').forEach((a) => a.addEventListener('pointerdown', (e) => e.stopPropagation()));
   }
 
   /* --------------------------------------------------------- launcher */
@@ -133,8 +162,7 @@ const AndroidOS = (() => {
     phone.querySelector('[data-settings]').onclick = () => { setShade(false); openApp('settings'); };
 
     gestures();
-    requestAnimationFrame(() => phone.classList.add('ready'));
-    setTimeout(() => toast(`Welcome! Swipe up for all apps`), 1200);
+    setTimeout(() => phone.classList.add('ready'), 30);
   }
 
   /* --------------------------------------------------------- gestures */

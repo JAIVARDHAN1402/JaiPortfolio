@@ -84,22 +84,44 @@ const WinOS = (() => {
   }
 
   function lock() {
-    const now = new Date();
+    const now = new Date(); const hr = now.getHours(); const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+    const facts = [
+      ['Timken India', 'Cut downtime detection on critical network infra from 15+ minutes to under 1 minute.'],
+      ['Bookify', 'Every seat is an atomic conditional write — two people can never book the same seat.'],
+      ['Tata Cummins', 'Camera + QR verification cut manual inspection steps by ~50% on the production line.'],
+      ['InterviewAI', 'Retry-with-backoff and model fallback so a Gemini rate limit never drops an answer.'],
+      ['IEEE SENSE-A-Thon 2026', '3rd place with a real-time multi-sensor Vehicle Health Monitoring System.'],
+    ];
     const el = h(`<div class="w-screen w-lock">
-      <div class="w-lock-time">${fmtTime(now)}</div>
+      <div class="w-lock-greet">${greet}</div>
+      <div class="w-lock-time"></div>
       <div class="w-lock-date">${now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+      <div class="w-lock-sig">${esc(DATA.name)}</div>
+      <div class="w-spot"><div class="w-spot-k">${svg('sparkles', 14)} Spotlight</div><div class="w-spot-t"></div><div class="w-spot-d"></div><div class="w-spot-dots">${facts.map((_, i) => `<i style="--i:${i}"></i>`).join('')}</div></div>
       <div class="w-lock-hint">${svg('chevronUp', 22)}<span>Click anywhere or press any key to unlock</span></div>
       <div class="w-lock-widgets">
         <div class="w-lock-card">${tile('briefcase', ['#22c55e', '#0ea5e9'], 34, 10)}<div><b>Open to SDE roles</b><span>Graduating May 2027 · ${esc(DATA.location.split(',')[0])}</span></div></div>
         <div class="w-lock-card">${tile('rocket', ['#f43f5e', '#f97316'], 34, 10)}<div><b>${DATA.projects.length} projects live</b><span>Next.js · MongoDB · Gemini</span></div></div>
         <div class="w-lock-card">${tile('mail', ['#06b6d4', '#3b82f6'], 34, 10)}<div><b>${esc(DATA.email)}</b><span>Usually replies within a day</span></div></div>
       </div>
+      <div class="w-lock-tray">${svg('wifi', 15)}${svg('volume', 15)}${svg('battery', 15)}</div>
     </div>`);
     root.appendChild(el);
     const stopParallax = FX.parallax(root, 22);
     FX.flipText(el.querySelector('.w-lock-time'), fmtTime(now));
     const t = setInterval(() => FX.flipText(el.querySelector('.w-lock-time'), fmtTime(new Date())), 1000);
-    const go = () => { clearInterval(t); stopParallax(); FX.sfx.unlock(); document.removeEventListener('keydown', go); el.classList.add('out'); setTimeout(() => el.remove(), 500); login(); };
+    let fi = 0; const spotT = el.querySelector('.w-spot-t'), spotD = el.querySelector('.w-spot-d'), dots = el.querySelectorAll('.w-spot-dots i');
+    const showFact = () => { const [k, v] = facts[fi % facts.length]; spotT.parentElement.classList.remove('flip'); void spotT.offsetWidth; spotT.parentElement.classList.add('flip'); spotT.textContent = k; spotD.textContent = v; dots.forEach((d, i) => d.classList.toggle('on', i === fi % facts.length)); fi++; };
+    showFact(); const ft = setInterval(showFact, 5000);
+    let done = false;
+    const go = () => {
+      if (done) return; done = true;
+      clearInterval(t); clearInterval(ft); stopParallax(); document.removeEventListener('keydown', go);
+      // "Hello"-style recognition moment
+      const hello = h(`<div class="w-hello">${svg('face', 34)}<span>Looking for you…</span></div>`); el.appendChild(hello);
+      setTimeout(() => { hello.classList.add('ok'); hello.querySelector('span').textContent = 'Welcome back'; hello.querySelector('svg').outerHTML = svg('check', 34); FX.sfx.unlock(); }, 700);
+      setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 500); login(); }, 1250);
+    };
     el.addEventListener('click', go); setTimeout(() => document.addEventListener('keydown', go, { once: true }), 300);
   }
 
