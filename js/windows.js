@@ -117,7 +117,6 @@ const WinOS = (() => {
     root.appendChild(desktop);
     fx = FX.particles(desktop, { count: 80 });
     desktop.insertBefore(h('<div class="fx-hud"></div>'), desktop.querySelector('.w-icons'));
-    FX.cursor();
     FX.ripple(desktop, '.w-tb-btn, .w-tb-app, .w-start-app, .w-rec, .w-qs, .btn, .w-icon, .w-ctx button, .w-power-menu button');
     FX.hoverFX(desktop, '.card, .stat, .project-card, .ach-card, .w-widget');
 
