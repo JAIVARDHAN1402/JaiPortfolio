@@ -34,7 +34,7 @@ css/fx.css         next-gen visual layer (glow borders, holographic sweeps, boot
 js/data.js         portfolio content (edit this)
 js/icons.js        SVG icon set + gradient tiles
 js/apps.js         app registry (About, Projects, Experience, Skills, Education, Achievements, Resume, Contact, Terminal, Settings)
-js/wallpaper.js    animated canvas wallpaper
+js/wallpaper.js    live wallpaper engine: Bloom, Aurora, Nebula (shooting stars), Synthwave grid, Ocean, Matrix + time-of-day tint
 js/fx.js           effects engine: particle network, custom cursor, ripples, 3D tilt, spotlight, parallax, glitch, UI sounds
 js/windows.js      Windows shell: boot/lock/login, window manager, taskbar, flyouts
 js/android.js      Android shell: launcher, drawer, app stack, shade, recents, gestures

@@ -7,7 +7,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const PREFS_KEY = 'jaios.prefs';
 const Prefs = {
   data: Object.assign(
-    { theme: 'dark', accent: '#3b82f6', wallpaper: 0, osMode: 'auto', sound: true },
+    { theme: 'dark', accent: '#3b82f6', wallpaper: 1, osMode: 'auto', sound: true },
     JSON.parse(localStorage.getItem(PREFS_KEY) || '{}')
   ),
   get(k) { return this.data[k]; },
@@ -20,10 +20,12 @@ function applyPrefs() {
 }
 
 const WALLPAPERS = [
-  { name: 'Bloom', colors: ['#1e3a8a', '#7c3aed', '#0ea5e9', '#ec4899'], base: '#0b1020' },
-  { name: 'Aurora', colors: ['#065f46', '#0d9488', '#22d3ee', '#a3e635'], base: '#041418' },
-  { name: 'Sunset', colors: ['#7c2d12', '#ea580c', '#f43f5e', '#facc15'], base: '#1a0a0a' },
-  { name: 'Nebula', colors: ['#312e81', '#db2777', '#6d28d9', '#0891b2'], base: '#0a0614' },
+  { name: 'Bloom', type: 'bloom', colors: ['#1e3a8a', '#7c3aed', '#0ea5e9', '#ec4899'], base: '#0b1020' },
+  { name: 'Aurora', type: 'aurora', colors: ['#22d3ee', '#a3e635', '#8b5cf6', '#0ea5e9'], base: '#03101c' },
+  { name: 'Nebula', type: 'nebula', colors: ['#6d28d9', '#db2777', '#0891b2', '#312e81'], base: '#05030f' },
+  { name: 'Synthwave', type: 'grid', colors: ['#f0abfc', '#22d3ee', '#f43f5e', '#3b0764'], base: '#0b0420' },
+  { name: 'Ocean', type: 'waves', colors: ['#0ea5e9', '#0369a1', '#06b6d4', '#1e3a8a'], base: '#03111f' },
+  { name: 'Matrix', type: 'matrix', colors: ['#22c55e', '#16a34a', '#86efac', '#052e16'], base: '#000000' },
 ];
 const ACCENTS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#10b981', '#06b6d4', '#ef4444', '#eab308'];
 
