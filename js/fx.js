@@ -177,3 +177,55 @@ Object.assign(FX, {
     return () => { clearTimeout(t); ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'].forEach((e) => document.removeEventListener(e, reset)); };
   },
 });
+
+/* ============================================================
+   FX v3 — morphing 3D particle sculpture for the landing hero
+   ============================================================ */
+FX.hero = function (canvas) {
+  const ctx = canvas.getContext('2d');
+  const N = 1200, dpr = Math.min(1.5, devicePixelRatio || 1);
+  let w, h, raf, t0 = performance.now(), ry = 0, rx = .35, mx = 0, my = 0, morphAt = 0, from, to, idx = 0;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const shapes = {
+    sphere: () => Array.from({ length: N }, (_, i) => { const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), th = i * 2.399963; return [Math.cos(th) * r, y, Math.sin(th) * r]; }),
+    torus: () => Array.from({ length: N }, () => { const u = rand(0, 6.283), v = rand(0, 6.283), R = .72, r = .3; return [(R + r * Math.cos(v)) * Math.cos(u), r * Math.sin(v), (R + r * Math.cos(v)) * Math.sin(u)]; }),
+    cube: () => Array.from({ length: N }, () => { const f = Math.random() * 6 | 0, a = rand(-.75, .75), b = rand(-.75, .75), s = .75; return [[s, a, b], [-s, a, b], [a, s, b], [a, -s, b], [a, b, s], [a, b, -s]][f]; }),
+    helix: () => Array.from({ length: N }, (_, i) => { const k = i / N, a = k * 6.283 * 3.2, s = i % 2 ? 1 : -1; if (i % 9 === 0) { const q = rand(-1, 1); return [Math.cos(a) * .55 * q, k * 2.2 - 1.1, Math.sin(a) * .55 * q]; } return [Math.cos(a) * .55 * s, k * 2.2 - 1.1, Math.sin(a) * .55 * s]; }),
+    pyramid: () => Array.from({ length: N }, () => { const y = rand(-.8, .9), s = (.9 - y) / 1.7 * .95, e = Math.random() * 4 | 0, k = rand(-1, 1); const c = [[s, y, s * k], [-s, y, s * k], [s * k, y, s], [s * k, y, -s]][e]; return c; }),
+  };
+  const order = ['sphere', 'helix', 'torus', 'cube', 'pyramid'];
+  from = shapes[order[0]](); to = from; let cur = from.map((p) => p.slice());
+  const resize = () => { w = canvas.width = canvas.clientWidth * dpr; h = canvas.height = canvas.clientHeight * dpr; };
+  resize(); const ro = new ResizeObserver(resize); ro.observe(canvas);
+  const onMove = (e) => { const r = canvas.getBoundingClientRect(); mx = (e.clientX - r.left) / r.width - .5; my = (e.clientY - r.top) / r.height - .5; };
+  window.addEventListener('pointermove', onMove);
+  const accent = () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#3b82f6';
+  const frame = (t) => {
+    raf = requestAnimationFrame(frame);
+    if (document.hidden) return;
+    const sec = (t - t0) / 1000;
+    if (sec > morphAt) { morphAt = sec + 5; idx = (idx + 1) % order.length; from = cur.map((p) => p.slice()); to = shapes[order[idx]](); }
+    const k = Math.min(1, Math.max(0, (sec - (morphAt - 5)) / 1.4)); const e = 1 - Math.pow(1 - k, 3);
+    ry += .0035 + mx * .02; rx += ((my * 1.2 + .35) - rx) * .04;
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h * .44, R = Math.min(w, h) * .3;
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.6); g.addColorStop(0, accent() + '33'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    const cr = Math.cos(ry), sr = Math.sin(ry), cx2 = Math.cos(rx), sx2 = Math.sin(rx);
+    const pts = [];
+    for (let i = 0; i < N; i++) {
+      const p = cur[i]; p[0] = from[i][0] + (to[i][0] - from[i][0]) * e; p[1] = from[i][1] + (to[i][1] - from[i][1]) * e; p[2] = from[i][2] + (to[i][2] - from[i][2]) * e;
+      let x = p[0] * cr - p[2] * sr, z = p[0] * sr + p[2] * cr, y = p[1];
+      const y2 = y * cx2 - z * sx2; z = y * sx2 + z * cx2; y = y2;
+      const pz = 1 / (2.4 - z); pts.push([cx + x * R * pz * 1.6, cy + y * R * pz * 1.6, z, i]);
+    }
+    pts.sort((a, b) => a[2] - b[2]);
+    const ac = accent();
+    for (const [x, y, z, i] of pts) {
+      const d = (z + 1) / 2; const s = (0.6 + d * 1.8) * dpr;
+      ctx.fillStyle = i % 7 === 0 ? `rgba(255,255,255,${.35 + d * .65})` : ac + Math.round((.25 + d * .7) * 255).toString(16).padStart(2, '0');
+      ctx.beginPath(); ctx.arc(x, y, s, 0, 6.283); ctx.fill();
+    }
+  };
+  raf = requestAnimationFrame(frame);
+  return () => { cancelAnimationFrame(raf); ro.disconnect(); window.removeEventListener('pointermove', onMove); };
+};

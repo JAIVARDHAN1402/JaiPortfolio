@@ -39,6 +39,7 @@ const AndroidOS = (() => {
       <div class="a-status"><span>${fmtTime(now)}</span><span class="a-status-icons">${svg('signal', 14)}${svg('wifi', 14)}${svg('battery', 14)}</span></div>
       <div class="a-lock-clock">${fmtTime(now)}</div>
       <div class="a-lock-date">${now.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+      <div class="a-lock-sig">${esc(DATA.name)}</div>
       <div class="a-lock-notifs">
         ${notifications.slice(0, 2).map((n) => `<div class="a-lock-card">${tile(n.icon, n.color, 32, 9)}<div><div class="a-lock-card-t">${n.title}</div><div class="a-lock-card-s">${n.text}</div></div></div>`).join('')}
       </div>

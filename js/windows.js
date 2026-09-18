@@ -29,7 +29,58 @@ const WinOS = (() => {
     </div>`);
     root.appendChild(el);
     FX.typeLines(el.querySelector('.fx-boot-lines'), ['Initializing JaiOS kernel v2.0', 'Loading modules: next.js, mongodb, c++', 'Mounting /projects (3 deployed)', 'Verifying credentials: VIT Vellore CSE', 'Starting window manager'], { speed: 10, lineDelay: 60 });
-    setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.remove(); lock(); }, 600); }, 3200);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.remove(); landing(); }, 600); }, 3200);
+  }
+
+
+  /* ------------------------------------------------- cinematic landing */
+  function landing() {
+    const words = (...ws) => ws.map((wd) => `<div class="ld-word">${[...wd].map((c, i) => `<span class="ld-ch" style="--i:${i}">${c}</span>`).join('')}</div>`).join('');
+    const el = h(`<div class="w-screen w-landing">
+      <div class="ld-bar"><span class="ld-brand">${winLogo(15)} JaiOS</span><nav class="ld-menu"><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span><span>Help</span></nav><span class="ld-right">${svg('wifi', 14)}${svg('battery', 14)}<span class="ld-time"></span></span></div>
+      <div class="ld-scroll">
+        <section class="ld-hero">
+          <canvas class="ld-canvas"></canvas>
+          <div class="ld-hero-text">
+            <div class="ld-kicker">Portfolio · Software Developer · VIT Vellore</div>
+            <h1 class="ld-name">${esc(DATA.name)}</h1>
+            <p class="ld-tag">I build full-stack products with <em>Next.js</em>, <em>MongoDB</em> and <em>C++</em> — and ship them to production.</p>
+          </div>
+          <div class="ld-hint"><span>Scroll to explore</span><i></i></div>
+        </section>
+        <section class="ld-sec">
+          <div class="ld-side"><div class="ld-eyebrow">I am a</div><p class="ld-desc">Full-stack developer who cares about correctness — atomic writes, transactions, auth done right. Built and deployed <b>${DATA.projects.length} production apps</b> on Next.js + MongoDB, and automation tools used daily on live factory floors at Timken and Tata Cummins.</p><div class="ld-chips">${['Next.js', 'MongoDB', 'React', 'JWT', 'REST APIs', 'VB.NET', 'Oracle SQL'].map((c) => `<span class="chip">${c}</span>`).join('')}</div></div>
+          <div class="ld-words">${words('FULL-STACK', 'DEVELOPER')}</div>
+        </section>
+        <section class="ld-sec ld-alt">
+          <div class="ld-words">${words('PROBLEM', 'SOLVER')}</div>
+          <div class="ld-side"><div class="ld-eyebrow">As well as a</div><p class="ld-desc"><b>200+ DSA problems</b> in C++ across LeetCode and GeeksforGeeks. 3rd place at IEEE SENSE-A-Thon 2026 against 50+ teams. CGPA 8.16 with a foundation in OS, DBMS, Networks and OOP.</p><div class="ld-chips">${['C++', 'Graphs', 'Trees', 'DP', 'Operating Systems', 'DBMS'].map((c) => `<span class="chip">${c}</span>`).join('')}</div></div>
+        </section>
+        <section class="ld-enter">
+          <div class="ld-enter-card">${avatarHTML(96)}<h2>Enter JaiOS</h2><p>${esc(DATA.headline)}</p><button class="btn btn-primary ld-signin">${svg('lock', 16)} Sign in to the desktop</button><div class="ld-socials">${socialButtons('btn-sm')}</div><div class="ld-foot">Press <kbd>Enter</kbd> anytime · Windows desktop here, Android on your phone</div></div>
+        </section>
+      </div>
+    </div>`);
+    root.appendChild(el);
+    const scroll = el.querySelector('.ld-scroll'), hero = el.querySelector('.ld-hero-text'), canvas = el.querySelector('.ld-canvas'), hint = el.querySelector('.ld-hint');
+    const stopHero = FX.hero(canvas);
+    const clock = setInterval(() => { el.querySelector('.ld-time').textContent = new Date().toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) + '  ' + fmtTime(new Date()); }, 1000); el.querySelector('.ld-time').textContent = fmtTime(new Date());
+    scroll.addEventListener('scroll', () => { const y = scroll.scrollTop, k = Math.min(1, y / innerHeight); hero.style.transform = `translateY(${y * .35}px)`; hero.style.opacity = 1 - k * 1.2; canvas.style.transform = `scale(${1 - k * .35}) translateY(${y * .2}px)`; canvas.style.opacity = 1 - k; hint.style.opacity = 1 - k * 3; }, { passive: true });
+    const io = new IntersectionObserver((es) => es.forEach((x) => x.target.classList.toggle('in', x.isIntersecting)), { root: scroll, threshold: .35 });
+    el.querySelectorAll('.ld-sec, .ld-enter').forEach((s) => io.observe(s));
+    FX.splitText(el.querySelector('.ld-tag'));
+    let done = false;
+    const go = () => {
+      if (done) return; done = true;
+      document.removeEventListener('keydown', onKey); clearInterval(clock); io.disconnect();
+      FX.sfx.unlock(); if (Prefs.get('sound')) chime();
+      const wel = h(`<div class="w-screen w-login"><div class="w-login-card">${avatarHTML(120)}<div class="w-login-name glitch" data-text="Welcome">Welcome</div><div class="w-spinner small">${'<i></i>'.repeat(6)}</div></div></div>`);
+      root.appendChild(wel); el.classList.add('out'); setTimeout(() => { stopHero(); el.remove(); }, 600);
+      setTimeout(() => { wel.classList.add('out'); setTimeout(() => wel.remove(), 600); if (!desktop) buildDesktop(); else desktop.classList.remove('locked'); }, 1600);
+    };
+    const onKey = (e) => { if (e.key === 'Enter') go(); };
+    el.querySelector('.ld-signin').onclick = go; document.addEventListener('keydown', onKey);
+    el.querySelectorAll('.ld-menu span').forEach((m) => (m.onclick = () => scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'smooth' })));
   }
 
   function lock() {

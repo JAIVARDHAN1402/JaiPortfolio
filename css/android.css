@@ -148,3 +148,5 @@
   #os-root.android-root { inset: auto; left: 50%; top: 50%; width: 412px; height: min(892px, 100vh - 40px); transform: translate(-50%, -50%); border-radius: 44px; border: 10px solid #15171c; box-shadow: 0 0 0 2px #2a2d36, 0 40px 100px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.06); }
   .android-root::before { content: ''; position: absolute; top: 10px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: #05060a; box-shadow: inset 0 0 0 2px #1f2230; z-index: 600; }
 }
+
+.a-lock-sig { font-family: 'Pinyon Script', cursive; font-size: 40px; margin-top: 22px; color: rgba(255,255,255,.9); animation: riseIn .9s .2s var(--ease) both; text-shadow: 0 6px 30px rgba(59,130,246,.45); }
