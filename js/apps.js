@@ -59,6 +59,7 @@ const APPS = {
         <div class="stats-row">
           ${DATA.stats.map((s) => `<div class="stat reveal"><div class="stat-value"><span class="counter" data-to="${s.value}">0</span>${s.suffix}</div><div class="stat-label">${s.label}</div></div>`).join('')}
         </div>
+        <div class="marquee reveal"><div class="marquee-track">${[0, 1].map(() => DATA.skills.flatMap((g) => g.items.map((i) => `<span class="chip">${svg('zap', 12)} ${esc(i[0])}</span>`)).join('')).join('')}</div></div>
         <div class="card reveal"><h3>${svg('info', 18)} Summary</h3><p class="lead">${esc(DATA.summary)}</p></div>
         <div class="two-col">
           <div class="card reveal"><h3>${svg('zap', 18)} What I do</h3>
@@ -99,8 +100,8 @@ const APPS = {
             <div class="explorer-crumb">${svg('folder', 16)} <span>This PC</span> › <span>Jaivardhan</span> › <span class="crumb-current">Projects</span></div>
             <div class="project-grid">
               ${DATA.projects.map((p, i) => `
-                <button class="project-card reveal" data-id="${p.id}" style="--d:${i * 80}ms">
-                  ${tile(p.icon, p.color, 56)}
+                <button class="project-card reveal" data-id="${p.id}" style="--d:${i * 80}ms;--c1:${p.color[0]};--c2:${p.color[1]}">
+                  <span class="pc-preview"><span class="pcp-window"><span class="pcp-dots"><i></i><i></i><i></i></span><b></b><b></b><b></b></span>${tile(p.icon, p.color, 30, 9)}</span>
                   <div class="pc-body"><div class="pc-name">${esc(p.name)}</div><div class="pc-tag">${esc(p.tagline)}</div>
                   <div class="chips">${p.stack.slice(0, 3).map((s) => `<span class="chip">${esc(s)}</span>`).join('')}</div></div>
                   <span class="pc-arrow">${svg('chevronRight', 18)}</span>

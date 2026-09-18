@@ -6,7 +6,7 @@ const WinOS = (() => {
   let root, desktop, wm, clockTimer, openFlyout = null, fx = null;
   const notifications = [];
   const PINNED = ['about', 'projects', 'terminal', 'contact', 'resume'];
-  const TASKBAR_H = 48;
+  const TASKBAR_H = 70;
 
   const h = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
   const winLogo = (s = 24) => `<svg class="w-logo" width="${s}" height="${s}" viewBox="0 0 24 24"><rect x="2" y="2" width="9.3" height="9.3" rx="1.2"/><rect x="12.7" y="2" width="9.3" height="9.3" rx="1.2"/><rect x="2" y="12.7" width="9.3" height="9.3" rx="1.2"/><rect x="12.7" y="12.7" width="9.3" height="9.3" rx="1.2"/></svg>`;
@@ -38,7 +38,11 @@ const WinOS = (() => {
       <div class="w-lock-time">${fmtTime(now)}</div>
       <div class="w-lock-date">${now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</div>
       <div class="w-lock-hint">${svg('chevronUp', 22)}<span>Click anywhere or press any key to unlock</span></div>
-      <div class="w-lock-widgets"><span>${svg('mail', 14)} ${DATA.email}</span><span>${svg('pin', 14)} ${DATA.location}</span></div>
+      <div class="w-lock-widgets">
+        <div class="w-lock-card">${tile('briefcase', ['#22c55e', '#0ea5e9'], 34, 10)}<div><b>Open to SDE roles</b><span>Graduating May 2027 · ${esc(DATA.location.split(',')[0])}</span></div></div>
+        <div class="w-lock-card">${tile('rocket', ['#f43f5e', '#f97316'], 34, 10)}<div><b>${DATA.projects.length} projects live</b><span>Next.js · MongoDB · Gemini</span></div></div>
+        <div class="w-lock-card">${tile('mail', ['#06b6d4', '#3b82f6'], 34, 10)}<div><b>${esc(DATA.email)}</b><span>Usually replies within a day</span></div></div>
+      </div>
     </div>`);
     root.appendChild(el);
     const stopParallax = FX.parallax(root, 22);
@@ -195,7 +199,7 @@ const WinOS = (() => {
       const width = Math.min(a.w || 800, vw - 24), height = Math.min(a.h || 560, vh - 24);
       const off = (this.count++ % 6) * 28;
       const left = Math.max(12, Math.round((vw - width) / 2 + off - 60)), top = Math.max(12, Math.round((vh - height) / 2 + off - 40));
-      const el = h(`<div class="w-window" data-id="${id}" style="left:${left}px;top:${top}px;width:${width}px;height:${height}px">
+      const el = h(`<div class="w-window" data-id="${id}" style="left:${left}px;top:${top}px;width:${width}px;height:${height}px;--c1:${a.color[0]};--c2:${a.color[1]}">
         <div class="w-titlebar">${tile(a.icon, a.color, 18, 5)}<span class="w-title">${a.title}</span>
           <div class="w-controls"><button data-c="min" title="Minimize">${svg('minus', 14)}</button><button data-c="max" title="Maximize">${svg('square', 12)}</button><button data-c="close" class="w-close" title="Close">${svg('x', 14)}</button></div>
         </div>
@@ -359,7 +363,9 @@ const WinOS = (() => {
   function bindOpens(el) { el.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => openApp(b.dataset.open, b.dataset.project ? { projectId: b.dataset.project } : undefined))); }
 
   function startMenu() {
+    const hr = new Date().getHours(); const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
     const f = h(`<div class="w-start">
+      <div class="w-start-hero">${avatarHTML(44)}<div><div class="w-start-greet">${greet}, visitor 👋</div><div class="w-start-sub">Exploring ${DATA.firstName}'s portfolio · JaiOS v2.0</div></div><span class="badge badge-accent"><span class="w-live-dot"></span>&nbsp;Open to work</span></div>
       <div class="w-search-box">${svg('search', 16)}<input placeholder="Search for apps, projects, and more"></div>
       <div class="w-start-section"><span>Pinned</span><span class="w-start-link">All apps ${svg('chevronRight', 12)}</span></div>
       <div class="w-start-grid">${DESKTOP_APPS.map((id) => appTile(id)).join('')}</div>

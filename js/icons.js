@@ -81,7 +81,7 @@ function svg(name, size = 20, extra = '') {
 
 /* Gradient app tile (Windows 11 / Material style) */
 function tile(name, colors, size = 48, radius = null) {
-  const r = radius ?? Math.round(size * 0.24);
+  const r = radius ?? Math.round(size * 0.27);
   const [a, b] = colors;
-  return `<span class="tile" style="width:${size}px;height:${size}px;border-radius:${r}px;background:linear-gradient(135deg,${a},${b})">${svg(name, Math.round(size * 0.52), 'stroke-width="2"')}</span>`;
+  return `<span class="tile" style="width:${size}px;height:${size}px;border-radius:${r}px;--c1:${a};--c2:${b}"><span class="tile-bg"></span><span class="tile-shine"></span>${svg(name, Math.round(size * 0.54), 'stroke-width="2.1"')}</span>`;
 }

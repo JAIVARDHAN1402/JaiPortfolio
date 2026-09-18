@@ -65,8 +65,9 @@ const AndroidOS = (() => {
           <div class="a-widget-clock"><span class="a-time"></span></div>
           <div class="a-widget-date"></div>
           <div class="a-widget-chip"><span class="a-live-dot"></span> Open to SDE roles · ${DATA.location.split(',')[0]}</div>
+          <div class="a-widget-stats">${DATA.stats.map((s) => `<span><b>${s.value}${s.suffix}</b>${s.label}</span>`).join('')}</div>
         </div>
-        <div class="a-grid a-home-grid">${HOME_APPS.map((id, i) => iconBtn(id, 58, i)).join('')}</div>
+        <div class="a-grid a-home-grid">${HOME_APPS.map((id, i) => iconBtn(id, 60, i)).join('')}</div>
         <div class="a-search-pill" data-drawer>${svg('search', 18)}<span>Search apps</span>${avatarHTML(26)}</div>
         <div class="a-dock">${DOCK.map((id) => iconBtn(id, 54).replace('<span>' + APPS[id].title + '</span>', '')).join('')}</div>
       </div>
