@@ -138,3 +138,76 @@ body.fx-cursor-on input, body.fx-cursor-on textarea { cursor: text !important; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
 }
+
+/* ====================== FX v2 — more motion ====================== */
+.fx-confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+
+/* letter-by-letter reveal */
+.fx-split .fx-ch { display: inline-block; animation: fxChar .6s var(--spring) both; animation-delay: calc(var(--i) * 28ms); }
+@keyframes fxChar { from { opacity: 0; transform: translateY(18px) rotateX(-70deg); filter: blur(4px) } to { opacity: 1; transform: none; filter: none } }
+
+/* staggered pop-in for menus / grids */
+.fx-stagger.fx-stagger { animation: fxPop .5s var(--spring) both; animation-delay: calc(var(--i) * var(--step, 35ms)); }
+@keyframes fxPop { from { opacity: 0; transform: translateY(14px) scale(.9) } to { opacity: 1; transform: none } }
+
+/* flip-clock digits */
+.fx-flip { display: inline-block; }
+.fx-flip.go { animation: fxFlip .5s var(--ease) both; transform-origin: 50% 100%; }
+@keyframes fxFlip { 0% { transform: rotateX(90deg) translateY(-8px); opacity: 0; filter: blur(2px) } 100% { transform: none; opacity: 1; filter: none } }
+
+/* timeline draws itself */
+.timeline::before { transform-origin: top; animation: tlDraw 1.4s .2s var(--ease) both; }
+@keyframes tlDraw { from { transform: scaleY(0) } to { transform: scaleY(1) } }
+.tl-dot { animation: tlDot .5s var(--spring) both; animation-delay: calc(.35s + var(--d, 0ms)); }
+@keyframes tlDot { from { transform: scale(0) } to { transform: scale(1) } }
+.tl-dot::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; animation: tlPing 2.4s ease-out infinite; animation-delay: calc(1s + var(--d, 0ms)); }
+@keyframes tlPing { 0% { transform: scale(.4); opacity: .8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+/* striped, breathing skill bars */
+.bar-fill::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, rgba(255,255,255,.18) 0 6px, transparent 6px 12px); background-size: 200% 100%; animation: stripes 1.2s linear infinite; }
+@keyframes stripes { to { background-position: 17px 0 } }
+
+/* project detail slide */
+.project-detail:not([hidden]) { animation: slideInR .35s var(--ease) both; }
+.explorer-main:not([hidden]) { animation: slideInL .3s var(--ease) both; }
+@keyframes slideInR { from { opacity: 0; transform: translateX(28px) } to { opacity: 1; transform: none } }
+@keyframes slideInL { from { opacity: 0; transform: translateX(-20px) } to { opacity: 1; transform: none } }
+
+/* contact sent state */
+.btn.sent { background: #22c55e; border-color: transparent; color: #fff; pointer-events: none; animation: sentPop .5s var(--spring); }
+@keyframes sentPop { 40% { transform: scale(1.08) } }
+
+/* mica aurora layer inside windows */
+.w-mica { position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .18; filter: blur(50px); background:
+  radial-gradient(40% 40% at 20% 20%, var(--c1), transparent 70%), radial-gradient(40% 40% at 80% 80%, var(--c2), transparent 70%);
+  animation: micaMove 14s ease-in-out infinite alternate; }
+@keyframes micaMove { to { transform: translate(8%, -6%) scale(1.15) rotate(10deg) } }
+.w-titlebar, .w-body { position: relative; z-index: 1; }
+
+/* cursor light on the wallpaper */
+.w-light { position: absolute; left: 0; top: 0; width: 700px; height: 700px; margin: -350px 0 0 -350px; border-radius: 50%; pointer-events: none; z-index: 1; opacity: 0; transition: opacity .6s;
+  background: radial-gradient(circle, rgba(255,255,255,.14), rgba(255,255,255,.04) 35%, transparent 65%); mix-blend-mode: screen; will-change: transform; }
+.w-desktop:hover .w-light { opacity: 1; }
+
+/* dock magnification */
+.w-tb-app .tile, .w-tb-btn .ico, .w-tb-btn .w-logo { transition: transform .14s var(--ease); transform-origin: 50% 100%; }
+
+/* window drag tilt */
+.w-window.dragging { transition: transform .12s ease-out; }
+.w-window.settle { transition: transform .45s var(--spring) !important; }
+
+/* screensaver */
+.w-saver { position: absolute; inset: 0; z-index: 900; background: #000; display: grid; place-items: center; color: #fff; animation: fadeIn 1.2s both; cursor: pointer; overflow: hidden; }
+.w-saver-clock { position: absolute; font-size: clamp(60px, 9vw, 120px); font-weight: 200; letter-spacing: -2px; animation: drift 24s ease-in-out infinite alternate; text-shadow: 0 0 40px rgba(76,194,255,.4); }
+.w-saver-sub { position: absolute; bottom: 60px; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #4b5563; animation: fadeIn 2s 1s both; }
+.w-saver-orb { position: absolute; width: 40vmin; height: 40vmin; border-radius: 50%; filter: blur(60px); opacity: .55; animation: orb 18s ease-in-out infinite alternate; }
+.w-saver-orb.b { animation-duration: 23s; animation-direction: alternate-reverse; }
+@keyframes drift { 0% { transform: translate(-30vw, -20vh) } 50% { transform: translate(25vw, 15vh) } 100% { transform: translate(-10vw, 25vh) } }
+@keyframes orb { 0% { transform: translate(-40vw, -30vh) } 100% { transform: translate(40vw, 30vh) } }
+
+/* android: staggered drawer / shade */
+.a-drawer .a-icon.fx-stagger { animation: fxPop .45s var(--spring) both; }
+.a-lock-notifs .a-lock-card { transition: transform .3s; }
+.page-title.fx-split { gap: 0; }
+.page-title.fx-split .ico { margin-right: 10px; }
+.a-appbar-title.fx-split { display: inline-block; }

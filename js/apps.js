@@ -226,7 +226,7 @@ const APPS = {
         </div>
       </div>`;
     },
-    mount(el) { runReveal(el); },
+    mount(el) { runReveal(el); setTimeout(() => FX.confetti(el.closest('.w-body, .a-app-body') || el), 350); },
   },
 
   resume: {
@@ -275,7 +275,10 @@ const APPS = {
         const f = new FormData(e.target);
         const subject = encodeURIComponent(`Portfolio contact from ${f.get('name')}`);
         const body = encodeURIComponent(`${f.get('message')}\n\n— ${f.get('name')} (${f.get('email')})`);
-        location.href = `mailto:${DATA.email}?subject=${subject}&body=${body}`;
+        const btn = e.target.querySelector('button[type=submit]'); btn.classList.add('sent'); btn.innerHTML = `${svg('check', 16)} Opening your mail app…`;
+        FX.sfx.open();
+        setTimeout(() => { location.href = `mailto:${DATA.email}?subject=${subject}&body=${body}`; }, 450);
+        setTimeout(() => { btn.classList.remove('sent'); btn.innerHTML = `${svg('send', 16)} Send via email`; }, 4000);
       };
     },
   },
@@ -349,6 +352,7 @@ function renderResumeHTML() {
 }
 
 function runReveal(el) {
+  el.querySelectorAll('.page-title').forEach((t) => FX.splitText(t));
   const items = el.querySelectorAll('.reveal');
   items.forEach((it, i) => setTimeout(() => it.classList.add('in'), 40 + i * 60));
 }

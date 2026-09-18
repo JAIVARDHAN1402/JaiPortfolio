@@ -121,3 +121,59 @@ const FX = (() => {
 
   return { particles, cursor, ripple, hoverFX, parallax, typeLines, sfx, reduced };
 })();
+
+/* ============================================================
+   FX v2 — confetti, text split, stagger, flip digits, idle
+   ============================================================ */
+Object.assign(FX, {
+  confetti(container, { count = 140, duration = 2800 } = {}) {
+    if (FX.reduced) return;
+    const c = document.createElement('canvas'); c.className = 'fx-confetti'; container.appendChild(c);
+    const ctx = c.getContext('2d'); const w = c.width = container.clientWidth, h = c.height = container.clientHeight;
+    const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#22c55e', '#06b6d4', '#facc15'];
+    const ps = Array.from({ length: count }, () => ({ x: w / 2 + (Math.random() - .5) * 80, y: h * .35, vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, r: Math.random() * 6 + 3, c: colors[Math.random() * colors.length | 0], a: Math.random() * 6.28, va: (Math.random() - .5) * .3 }));
+    const t0 = performance.now();
+    const frame = (t) => {
+      const k = (t - t0) / duration; ctx.clearRect(0, 0, w, h);
+      for (const p of ps) { p.vy += .35; p.x += p.vx; p.y += p.vy; p.vx *= .99; p.a += p.va; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.globalAlpha = Math.max(0, 1 - k * 1.1); ctx.fillStyle = p.c; ctx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx.restore(); }
+      if (k < 1) requestAnimationFrame(frame); else c.remove();
+    };
+    requestAnimationFrame(frame);
+  },
+
+  splitText(el) {
+    if (!el || el.dataset.split || FX.reduced) return;
+    el.dataset.split = '1';
+    const walk = (node) => {
+      [...node.childNodes].forEach((n) => {
+        if (n.nodeType === 3) { const frag = document.createDocumentFragment(); [...n.textContent].forEach((ch) => { const s = document.createElement('span'); s.className = 'fx-ch'; s.textContent = ch === ' ' ? '\u00a0' : ch; frag.appendChild(s); }); n.replaceWith(frag); }
+        else if (n.nodeType === 1 && !n.matches('svg, .ico')) walk(n);
+      });
+    };
+    walk(el);
+    el.querySelectorAll('.fx-ch').forEach((s, i) => s.style.setProperty('--i', i));
+    el.classList.add('fx-split');
+  },
+
+  stagger(container, selector, step = 35) {
+    if (!container) return;
+    container.querySelectorAll(selector).forEach((el, i) => { el.style.setProperty('--i', i); el.style.setProperty('--step', step + 'ms'); el.classList.remove('fx-stagger'); void el.offsetWidth; el.classList.add('fx-stagger'); });
+  },
+
+  flipText(el, text) {
+    if (!el) return;
+    if (el.dataset.txt === text) return;
+    const old = el.dataset.txt || '';
+    el.dataset.txt = text;
+    if (!old || FX.reduced) { el.textContent = text; return; }
+    el.innerHTML = [...text].map((ch, i) => `<span class="fx-flip ${old[i] !== ch ? 'go' : ''}">${ch === ' ' ? '&nbsp;' : ch}</span>`).join('');
+  },
+
+  idle(ms, onIdle, onWake) {
+    let t, idle = false;
+    const reset = () => { if (idle) { idle = false; onWake?.(); } clearTimeout(t); t = setTimeout(() => { idle = true; onIdle(); }, ms); };
+    ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'].forEach((e) => document.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => { clearTimeout(t); ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'].forEach((e) => document.removeEventListener(e, reset)); };
+  },
+});

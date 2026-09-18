@@ -46,7 +46,8 @@ const AndroidOS = (() => {
     </div>`);
     root.appendChild(el);
     const stopParallax = FX.parallax(root, 16);
-    const t = setInterval(() => { el.querySelector('.a-lock-clock').textContent = fmtTime(new Date()); }, 1000);
+    FX.flipText(el.querySelector('.a-lock-clock'), fmtTime(now));
+    const t = setInterval(() => FX.flipText(el.querySelector('.a-lock-clock'), fmtTime(new Date())), 1000);
     let sy = null, moved = false;
     const unlock = () => { clearInterval(t); stopParallax(); FX.sfx.unlock(); el.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1), opacity .4s'; el.style.transform = 'translateY(-100%)'; el.style.opacity = '0'; setTimeout(() => el.remove(), 500); if (!phone) buildHome(); else phone.classList.remove('hidden'); };
     el.addEventListener('pointerdown', (e) => { sy = e.clientY; moved = false; el.setPointerCapture(e.pointerId); });
@@ -157,8 +158,8 @@ const AndroidOS = (() => {
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
   }
 
-  function setDrawer(on) { phone.classList.toggle('drawer', on); if (on) setTimeout(() => phone.querySelector('.a-drawer-search input')?.blur(), 0); }
-  function setShade(on) { phone.classList.toggle('shade', on); }
+  function setDrawer(on) { phone.classList.toggle('drawer', on); if (on) FX.stagger(phone.querySelector('.a-drawer-grid'), '.a-icon', 22); if (on) setTimeout(() => phone.querySelector('.a-drawer-search input')?.blur(), 0); }
+  function setShade(on) { phone.classList.toggle('shade', on); if (on) FX.stagger(phone.querySelector('.a-shade-panel'), '.a-tile, .a-notif', 30); }
   function setRecents(on) {
     const r = phone.querySelector('.a-recents');
     if (!on) { r.classList.remove('in'); setTimeout(() => { r.hidden = true; r.innerHTML = ''; }, 250); phone.classList.remove('recents'); return; }
@@ -217,6 +218,7 @@ const AndroidOS = (() => {
     body.innerHTML = a.render('android');
     w = { id, el, body, bg: false }; stack.push(w); layer.appendChild(el);
     a.mount?.(body, 'android', opts);
+    FX.splitText(el.querySelector('.a-appbar-title'));
     el.querySelector('.a-appbar-back').onclick = () => closeApp(id);
     syncNav();
     if (fromEl) { const r = fromEl.getBoundingClientRect(), pr = phone.getBoundingClientRect(); el.style.transformOrigin = `${r.left - pr.left + r.width / 2}px ${r.top - pr.top + r.height / 2}px`; }

@@ -3,7 +3,7 @@
    taskbar, start menu, flyouts, notifications
    ============================================================ */
 const WinOS = (() => {
-  let root, desktop, wm, clockTimer, openFlyout = null, fx = null;
+  let root, desktop, wm, clockTimer, openFlyout = null, fx = null, stopIdle = null;
   const notifications = [];
   const PINNED = ['about', 'projects', 'terminal', 'contact', 'resume'];
   const TASKBAR_H = 70;
@@ -46,7 +46,8 @@ const WinOS = (() => {
     </div>`);
     root.appendChild(el);
     const stopParallax = FX.parallax(root, 22);
-    const t = setInterval(() => { el.querySelector('.w-lock-time').textContent = fmtTime(new Date()); }, 1000);
+    FX.flipText(el.querySelector('.w-lock-time'), fmtTime(now));
+    const t = setInterval(() => FX.flipText(el.querySelector('.w-lock-time'), fmtTime(new Date())), 1000);
     const go = () => { clearInterval(t); stopParallax(); FX.sfx.unlock(); document.removeEventListener('keydown', go); el.classList.add('out'); setTimeout(() => el.remove(), 500); login(); };
     el.addEventListener('click', go); setTimeout(() => document.addEventListener('keydown', go, { once: true }), 300);
   }
@@ -120,14 +121,30 @@ const WinOS = (() => {
     FX.ripple(desktop, '.w-tb-btn, .w-tb-app, .w-start-app, .w-rec, .w-qs, .btn, .w-icon, .w-ctx button, .w-power-menu button');
     FX.hoverFX(desktop, '.card, .stat, .project-card, .ach-card, .w-widget');
 
+    // cursor light that follows the pointer over the wallpaper
+    const light = h('<div class="w-light"></div>'); desktop.insertBefore(light, desktop.querySelector('.w-icons'));
+    let lx = 0, ly = 0, lraf = null;
+    desktop.addEventListener('pointermove', (e) => { lx = e.clientX; ly = e.clientY; if (!lraf) lraf = requestAnimationFrame(() => { light.style.transform = `translate(${lx}px,${ly}px)`; lraf = null; }); });
+
+    // macOS-style dock magnification on the taskbar
+    const center = desktop.querySelector('.w-tb-center');
+    const magnify = (x) => center.querySelectorAll('.w-tb-app, .w-tb-btn').forEach((b) => {
+      const r = b.getBoundingClientRect(); const d = Math.abs(x - (r.left + r.width / 2)); const s = x == null ? 1 : 1 + 0.38 * Math.max(0, 1 - d / 110);
+      const t = b.querySelector('.tile, .w-logo, .ico'); if (t) t.style.transform = s > 1.01 ? `translateY(${-(s - 1) * 14}px) scale(${s})` : '';
+    });
+    center.addEventListener('pointermove', (e) => magnify(e.clientX)); center.addEventListener('pointerleave', () => magnify(null));
+
+    // idle screensaver
+    stopIdle = FX.idle(180000, showScreensaver, hideScreensaver);
+
     // icons
     const icons = desktop.querySelector('.w-icons');
     DESKTOP_APPS.forEach((id, i) => {
       const a = APPS[id];
       const ic = h(`<button class="w-icon" data-id="${id}" style="--d:${i * 40}ms">${tile(a.icon, a.color, 44)}<span>${a.title}</span></button>`);
-      ic.onclick = (e) => { desktop.querySelectorAll('.w-icon.sel').forEach((x) => x.classList.remove('sel')); ic.classList.add('sel'); if (e.detail === 0 || matchMedia('(pointer:coarse)').matches) openApp(id); };
-      ic.ondblclick = () => openApp(id);
-      ic.onkeydown = (e) => { if (e.key === 'Enter') openApp(id); };
+      ic.onclick = (e) => { desktop.querySelectorAll('.w-icon.sel').forEach((x) => x.classList.remove('sel')); ic.classList.add('sel'); if (e.detail === 0 || matchMedia('(pointer:coarse)').matches) openApp(id, undefined, ic); };
+      ic.ondblclick = () => openApp(id, undefined, ic);
+      ic.onkeydown = (e) => { if (e.key === 'Enter') openApp(id, undefined, ic); };
       icons.appendChild(ic);
     });
 
@@ -163,12 +180,12 @@ const WinOS = (() => {
     if (e.key === 'Escape') { closeFlyout(); const ctx = desktop?.querySelector('.w-ctx'); if (ctx) ctx.hidden = true; desktop?.querySelector('.w-taskview')?.remove(); }
   }
 
-  function openApp(id, opts) {
+  function openApp(id, opts, fromEl) {
     closeFlyout();
     const a = APPS[id]; if (!a) return;
     if (a.external) { window.open(a.external, '_blank', 'noopener'); return; }
     FX.sfx.open();
-    wm.open(id, opts);
+    wm.open(id, opts, fromEl);
   }
   function closeApp(id) { const w = wm.wins.get(id); if (w) wm.close(w); }
 
@@ -183,7 +200,7 @@ const WinOS = (() => {
       b = h(`<button class="w-tb-app ${pinned ? 'pinned' : ''}" data-app="${id}" title="${a.title}">${tile(a.icon, a.color, 26, 7)}<i class="w-tb-ind"></i></button>`);
       b.onclick = () => {
         const w = this.wins.get(id);
-        if (!w) return openApp(id);
+        if (!w) return openApp(id, undefined, b);
         if (w.min) return this.restore(w);
         if (w.el.classList.contains('active')) return this.minimize(w);
         this.focus(w);
@@ -191,7 +208,7 @@ const WinOS = (() => {
       this.tbApps.appendChild(b); return b;
     }
 
-    open(id, opts = {}) {
+    open(id, opts = {}, fromEl = null) {
       if (this.wins.has(id)) { const w = this.wins.get(id); if (w.min) this.restore(w); else this.focus(w); if (opts.projectId) APPS[id].mount?.(w.body, 'win', opts); return w; }
       const a = APPS[id];
       const vw = innerWidth, vh = innerHeight - TASKBAR_H;
@@ -199,6 +216,7 @@ const WinOS = (() => {
       const off = (this.count++ % 6) * 28;
       const left = Math.max(12, Math.round((vw - width) / 2 + off - 60)), top = Math.max(12, Math.round((vh - height) / 2 + off - 40));
       const el = h(`<div class="w-window" data-id="${id}" style="left:${left}px;top:${top}px;width:${width}px;height:${height}px;--c1:${a.color[0]};--c2:${a.color[1]}">
+        <div class="w-mica"></div>
         <div class="w-titlebar">${tile(a.icon, a.color, 18, 5)}<span class="w-title">${a.title}</span>
           <div class="w-controls"><button data-c="min" title="Minimize">${svg('minus', 14)}</button><button data-c="max" title="Maximize">${svg('square', 12)}</button><button data-c="close" class="w-close" title="Close">${svg('x', 14)}</button></div>
         </div>
@@ -221,7 +239,13 @@ const WinOS = (() => {
 
       this.addTaskbarButton(id).classList.add('running');
       this.focus(w);
-      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('open')));
+      if (fromEl && !FX.reduced) { // genie: grow out of the icon that launched it
+        const r = fromEl.getBoundingClientRect();
+        el.style.transform = `translate(${r.left + r.width / 2 - (left + width / 2)}px, ${r.top + r.height / 2 - (top + height / 2)}px) scale(${Math.max(.04, r.width / width)})`;
+        el.style.opacity = '0';
+      }
+      requestAnimationFrame(() => requestAnimationFrame(() => { el.classList.add('open'); el.style.transform = ''; el.style.opacity = ''; }));
+      FX.splitText(body.querySelector('.page-title'));
       return w;
     }
 
@@ -284,7 +308,7 @@ const WinOS = (() => {
 
     makeDraggable(w) {
       const bar = w.el.querySelector('.w-titlebar');
-      let sx, sy, sl, st, dragging = false, zone = null;
+      let sx, sy, sl, st, dragging = false, zone = null, lastX = null;
       bar.addEventListener('pointerdown', (e) => {
         if (e.button !== 0 || e.target.closest('.w-controls')) return;
         bar.setPointerCapture(e.pointerId); sx = e.clientX; sy = e.clientY; dragging = false;
@@ -301,6 +325,8 @@ const WinOS = (() => {
             sl = Math.round(e.clientX - w.rect.width * ratio); st = Math.max(0, e.clientY - 18); sx = e.clientX; sy = e.clientY;
           }
         }
+        const vx = e.clientX - (lastX ?? e.clientX); lastX = e.clientX;
+        w.el.style.transform = `rotate(${Math.max(-3.5, Math.min(3.5, vx * .35))}deg)`;
         const nl = Math.min(innerWidth - 80, Math.max(-w.el.offsetWidth + 120, sl + (e.clientX - sx)));
         const nt = Math.min(innerHeight - TASKBAR_H - 30, Math.max(0, st + (e.clientY - sy)));
         w.el.style.left = nl + 'px'; w.el.style.top = nt + 'px';
@@ -309,7 +335,8 @@ const WinOS = (() => {
       });
       const end = (e) => {
         if (!bar.hasPointerCapture(e.pointerId)) return;
-        bar.releasePointerCapture(e.pointerId); w.el.classList.remove('dragging'); this.showSnap(null);
+        bar.releasePointerCapture(e.pointerId); w.el.classList.remove('dragging'); this.showSnap(null); lastX = null;
+        if (dragging) { w.el.classList.add('settle'); w.el.style.transform = ''; setTimeout(() => w.el.classList.remove('settle'), 500); }
         if (dragging && zone) this.snapTo(w, zone); zone = null; dragging = false;
       };
       bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
@@ -354,12 +381,12 @@ const WinOS = (() => {
     const builders = { start: startMenu, search: searchFlyout, calendar: calendarFlyout, quick: quickSettings, notifs: notifCenter, widgets: widgetsPanel };
     const f = builders[kind](); f.dataset.kind = kind; f.classList.add('w-flyout');
     desktop.querySelector('.w-flyouts').appendChild(f); openFlyout = f; btn?.classList.add('on');
-    requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add('in')));
+    requestAnimationFrame(() => requestAnimationFrame(() => { f.classList.add('in'); FX.stagger(f, '.w-start-app, .w-rec, .w-qs, .w-widget, .w-notifs-list .toast', 28); }));
     f.querySelector('input')?.focus();
   }
 
   function appTile(id, size = 36) { const a = APPS[id]; return `<button class="w-start-app" data-open="${id}">${tile(a.icon, a.color, size)}<span>${a.title}</span></button>`; }
-  function bindOpens(el) { el.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => openApp(b.dataset.open, b.dataset.project ? { projectId: b.dataset.project } : undefined))); }
+  function bindOpens(el) { el.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => openApp(b.dataset.open, b.dataset.project ? { projectId: b.dataset.project } : undefined, b))); }
 
   function startMenu() {
     const hr = new Date().getHours(); const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
@@ -542,7 +569,14 @@ const WinOS = (() => {
       root.appendChild(off); off.querySelector('button').onclick = () => start(root);
     }, 1800);
   }
-  function teardown() { clearInterval(clockTimer); fx?.destroy(); fx = null; document.removeEventListener('keydown', onGlobalKey); Wallpaper.unmount(); desktop = null; wm = null; openFlyout = null; }
+  function showScreensaver() {
+    if (!desktop || desktop.querySelector('.w-saver')) return;
+    const s = h(`<div class="w-saver"><div class="w-saver-orb" style="background:#3b82f6"></div><div class="w-saver-orb b" style="background:#8b5cf6"></div><div class="w-saver-clock">${fmtTime(new Date())}</div><div class="w-saver-sub">JaiOS · ${esc(DATA.name)} · move to wake</div></div>`);
+    desktop.appendChild(s); s._t = setInterval(() => { s.querySelector('.w-saver-clock').textContent = fmtTime(new Date()); }, 1000);
+  }
+  function hideScreensaver() { const s = desktop?.querySelector('.w-saver'); if (!s) return; clearInterval(s._t); s.style.transition = 'opacity .5s'; s.style.opacity = '0'; setTimeout(() => s.remove(), 500); }
+
+  function teardown() { clearInterval(clockTimer); fx?.destroy(); fx = null; stopIdle?.(); stopIdle = null; document.removeEventListener('keydown', onGlobalKey); Wallpaper.unmount(); desktop = null; wm = null; openFlyout = null; }
 
   return { start, openApp, closeApp, teardown, notify };
 })();
