@@ -3,7 +3,7 @@
    taskbar, start menu, flyouts, notifications
    ============================================================ */
 const WinOS = (() => {
-  let root, desktop, wm, clockTimer, openFlyout = null;
+  let root, desktop, wm, clockTimer, openFlyout = null, fx = null;
   const notifications = [];
   const PINNED = ['about', 'projects', 'terminal', 'contact', 'resume'];
   const TASKBAR_H = 48;
@@ -23,11 +23,13 @@ const WinOS = (() => {
   function boot() {
     const el = h(`<div class="w-screen w-boot">
       <div class="w-boot-logo">${winLogo(96)}</div>
-      <div class="w-spinner">${'<i></i>'.repeat(6)}</div>
+      <div class="w-boot-progress"><i></i></div>
+      <div class="fx-boot-lines"></div>
       <div class="w-boot-text">JaiOS</div>
     </div>`);
     root.appendChild(el);
-    setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.remove(); lock(); }, 600); }, 2600);
+    FX.typeLines(el.querySelector('.fx-boot-lines'), ['Initializing JaiOS kernel v2.0', 'Loading modules: next.js, mongodb, c++', 'Mounting /projects (3 deployed)', 'Verifying credentials: VIT Vellore CSE', 'Starting window manager'], { speed: 10, lineDelay: 60 });
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.remove(); lock(); }, 600); }, 3200);
   }
 
   function lock() {
@@ -39,8 +41,9 @@ const WinOS = (() => {
       <div class="w-lock-widgets"><span>${svg('mail', 14)} ${DATA.email}</span><span>${svg('pin', 14)} ${DATA.location}</span></div>
     </div>`);
     root.appendChild(el);
+    const stopParallax = FX.parallax(root, 22);
     const t = setInterval(() => { el.querySelector('.w-lock-time').textContent = fmtTime(new Date()); }, 1000);
-    const go = () => { clearInterval(t); document.removeEventListener('keydown', go); el.classList.add('out'); setTimeout(() => el.remove(), 500); login(); };
+    const go = () => { clearInterval(t); stopParallax(); FX.sfx.unlock(); document.removeEventListener('keydown', go); el.classList.add('out'); setTimeout(() => el.remove(), 500); login(); };
     el.addEventListener('click', go); setTimeout(() => document.addEventListener('keydown', go, { once: true }), 300);
   }
 
@@ -60,7 +63,7 @@ const WinOS = (() => {
     const go = () => {
       document.removeEventListener('keydown', onKey);
       btn.disabled = true;
-      el.querySelector('.w-login-card').innerHTML = `${avatarHTML(120)}<div class="w-login-name">Welcome</div><div class="w-spinner small">${'<i></i>'.repeat(6)}</div>`;
+      el.querySelector('.w-login-card').innerHTML = `${avatarHTML(120)}<div class="w-login-name glitch" data-text="Welcome">Welcome</div><div class="w-spinner small">${'<i></i>'.repeat(6)}</div>`;
       if (Prefs.get('sound')) chime();
       setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 600); if (!desktop) buildDesktop(); else desktop.classList.remove('locked'); }, 1500);
     };
@@ -108,6 +111,11 @@ const WinOS = (() => {
       <div class="w-brightness"></div>
     </div>`);
     root.appendChild(desktop);
+    fx = FX.particles(desktop, { count: 80 });
+    desktop.insertBefore(h('<div class="fx-hud"></div>'), desktop.querySelector('.w-icons'));
+    FX.cursor();
+    FX.ripple(desktop, '.w-tb-btn, .w-tb-app, .w-start-app, .w-rec, .w-qs, .btn, .w-icon, .w-ctx button, .w-power-menu button');
+    FX.hoverFX(desktop, '.card, .stat, .project-card, .ach-card, .w-widget');
 
     // icons
     const icons = desktop.querySelector('.w-icons');
@@ -156,6 +164,7 @@ const WinOS = (() => {
     closeFlyout();
     const a = APPS[id]; if (!a) return;
     if (a.external) { window.open(a.external, '_blank', 'noopener'); return; }
+    FX.sfx.open();
     wm.open(id, opts);
   }
   function closeApp(id) { const w = wm.wins.get(id); if (w) wm.close(w); }
@@ -260,6 +269,7 @@ const WinOS = (() => {
       Object.assign(w.el.style, { left: (zone === 'left' ? 0 : half) + 'px', top: '0px', width: half + 'px', height: (innerHeight - TASKBAR_H) + 'px' });
     }
     close(w) {
+      FX.sfx.close();
       w.el.classList.remove('open'); w.el.classList.add('closing');
       setTimeout(() => w.el.remove(), 220);
       this.wins.delete(w.id);
@@ -527,7 +537,7 @@ const WinOS = (() => {
       root.appendChild(off); off.querySelector('button').onclick = () => start(root);
     }, 1800);
   }
-  function teardown() { clearInterval(clockTimer); document.removeEventListener('keydown', onGlobalKey); Wallpaper.unmount(); desktop = null; wm = null; openFlyout = null; }
+  function teardown() { clearInterval(clockTimer); fx?.destroy(); fx = null; document.removeEventListener('keydown', onGlobalKey); Wallpaper.unmount(); desktop = null; wm = null; openFlyout = null; }
 
   return { start, openApp, closeApp, teardown, notify };
 })();

@@ -48,7 +48,7 @@ const APPS = {
       return `
       <div class="app app-about">
         <div class="about-hero">
-          <div class="about-avatar-wrap">${avatarHTML(120)}<span class="status-dot" title="Open to work"></span></div>
+          <div class="about-avatar-wrap"><i class="orbit o1"></i><i class="orbit o2"></i>${avatarHTML(120)}<span class="status-dot" title="Open to work"></span></div>
           <div class="about-head">
             <h1 class="about-name">${esc(DATA.name)}</h1>
             <div class="about-role"><span class="typewriter" data-words='${JSON.stringify(DATA.taglines)}'></span><span class="caret">|</span></div>

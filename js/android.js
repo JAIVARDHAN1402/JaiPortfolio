@@ -3,7 +3,7 @@
    recents, notification shade, gesture handling
    ============================================================ */
 const AndroidOS = (() => {
-  let root, phone, clockTimer;
+  let root, phone, clockTimer, fx = null;
   const stack = []; // open apps, last = foreground
   const HOME_APPS = ['about', 'projects', 'experience', 'skills', 'education', 'achievements', 'resume', 'settings', 'github', 'linkedin', 'leetcode'];
   const DOCK = ['about', 'projects', 'terminal', 'contact'];
@@ -45,9 +45,10 @@ const AndroidOS = (() => {
       <div class="a-lock-bottom"><span class="a-lock-hint">${svg('chevronUp', 18)} Swipe up to unlock</span><div class="a-lock-actions"><span>${svg('phone', 20)}</span><span>${svg('mail', 20)}</span></div></div>
     </div>`);
     root.appendChild(el);
+    const stopParallax = FX.parallax(root, 16);
     const t = setInterval(() => { el.querySelector('.a-lock-clock').textContent = fmtTime(new Date()); }, 1000);
     let sy = null, moved = false;
-    const unlock = () => { clearInterval(t); el.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1), opacity .4s'; el.style.transform = 'translateY(-100%)'; el.style.opacity = '0'; setTimeout(() => el.remove(), 500); if (!phone) buildHome(); else phone.classList.remove('hidden'); };
+    const unlock = () => { clearInterval(t); stopParallax(); FX.sfx.unlock(); el.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1), opacity .4s'; el.style.transform = 'translateY(-100%)'; el.style.opacity = '0'; setTimeout(() => el.remove(), 500); if (!phone) buildHome(); else phone.classList.remove('hidden'); };
     el.addEventListener('pointerdown', (e) => { sy = e.clientY; moved = false; el.setPointerCapture(e.pointerId); });
     el.addEventListener('pointermove', (e) => { if (sy == null) return; const dy = Math.min(0, e.clientY - sy); if (dy < -4) moved = true; el.style.transform = `translateY(${dy * 0.6}px)`; });
     el.addEventListener('pointerup', (e) => { if (sy == null) return; const dy = e.clientY - sy; sy = null; if (dy < -70 || !moved) unlock(); else { el.style.transition = 'transform .3s'; el.style.transform = ''; setTimeout(() => (el.style.transition = ''), 300); } });
@@ -97,6 +98,9 @@ const AndroidOS = (() => {
       <div class="a-nav"><button data-nav="back" aria-label="Back">${svg('back', 22)}</button><button data-nav="home" aria-label="Home">${svg('circle', 20)}</button><button data-nav="recents" aria-label="Recents">${svg('recents', 18)}</button></div>
     </div>`);
     root.appendChild(phone);
+    fx = FX.particles(phone, { count: 40, maxDist: 110, speed: .18 });
+    FX.ripple(phone, '.a-icon, .a-tile, .a-notif, .a-nav button, .btn, .a-appbar-back, .a-search-pill');
+    FX.hoverFX(phone, '.card, .stat, .project-card, .ach-card');
 
     // clock
     const tick = () => { const d = new Date(); phone.querySelectorAll('.a-time').forEach((x) => (x.textContent = fmtTime(d))); phone.querySelector('.a-widget-date').textContent = d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }); };
@@ -195,6 +199,7 @@ const AndroidOS = (() => {
     const a = APPS[id]; if (!a) return;
     setDrawer(false); setShade(false);
     if (a.external) { window.open(a.external, '_blank', 'noopener'); return; }
+    FX.sfx.open();
     const layer = phone.querySelector('.a-apps');
     let w = stack.find((x) => x.id === id);
     if (w) {
@@ -221,6 +226,7 @@ const AndroidOS = (() => {
     const w = stack.find((x) => x.id === id); if (!w) return;
     stack.splice(stack.indexOf(w), 1); syncNav();
     if (silent) { w.el.remove(); return; }
+    FX.sfx.close();
     w.el.classList.remove('in'); w.el.classList.add('out');
     setTimeout(() => w.el.remove(), 300);
   }
@@ -232,7 +238,7 @@ const AndroidOS = (() => {
     setTimeout(() => { t.classList.remove('in'); setTimeout(() => t.remove(), 300); }, 3200);
   }
 
-  function teardown() { clearInterval(clockTimer); Wallpaper.unmount(); phone = null; stack.length = 0; }
+  function teardown() { clearInterval(clockTimer); fx?.destroy(); fx = null; Wallpaper.unmount(); phone = null; stack.length = 0; }
 
   return { start, openApp, closeApp, teardown, toast };
 })();
